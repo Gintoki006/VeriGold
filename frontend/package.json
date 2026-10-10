@@ -6,7 +6,8 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "eslint"
+        "lint": "eslint",
+        "check": "next lint && next build"
     },
     "dependencies": {
         "axios": "^1.20.0",
