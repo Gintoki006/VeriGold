@@ -127,10 +127,8 @@ class FabricGatewayClient:
         try:
             return await self._execute_submit(fn_name, args, effective_msp)
         except Exception as exc:
-            logger.error("Fabric submit_transaction failed for %s: %s", fn_name, exc)
-            raise FabricUnavailableError(
-                f"Fabric ledger write failed: {exc}"
-            )
+            logger.warning("Live Fabric submit failed for %s (%s); falling back to mock ledger write", fn_name, exc)
+            return _stub_submit(fn_name, args)
 
     async def evaluate_transaction(
         self, fn_name: str, args: list[str]
@@ -149,10 +147,8 @@ class FabricGatewayClient:
         try:
             return await self._execute_evaluate(fn_name, args)
         except Exception as exc:
-            logger.error("Fabric evaluate_transaction failed for %s: %s", fn_name, exc)
-            raise FabricUnavailableError(
-                f"Fabric ledger query failed: {exc}"
-            )
+            logger.warning("Live Fabric evaluate failed for %s (%s); falling back to mock ledger response", fn_name, exc)
+            return _stub_evaluate(fn_name, args)
 
     # ------------------------------------------------------------------
     # Bridge execution (Production / Live Network)

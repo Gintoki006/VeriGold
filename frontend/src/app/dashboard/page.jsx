@@ -101,6 +101,7 @@ function DashboardContent() {
       router.push(url);
     } catch (e) {
       setSearchError(e.message);
+    } finally {
       setSearching(false);
     }
   }

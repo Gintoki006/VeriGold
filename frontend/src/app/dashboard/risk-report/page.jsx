@@ -56,12 +56,11 @@ function RiskReportContent() {
   const [boundGoldFp, setBoundGoldFp] = useState(null);
   const [registeredPledgeId, setRegisteredPledgeId] = useState(null);
 
-  const fetchedKeyRef = useRef('');
-
   async function fetchReport(force = false) {
-    const key = `${borrowerHash}_${initialGoldFp}`;
-    if (!borrowerHash || (!force && fetchedKeyRef.current === key)) return;
-    fetchedKeyRef.current = key;
+    if (!borrowerHash) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -72,7 +71,6 @@ function RiskReportContent() {
       const res = await api.post('/api/borrowers/search', payload);
       setReport(res.data);
     } catch (e) {
-      fetchedKeyRef.current = ''; // allow retry on failure
       setError(e.message);
     } finally {
       setLoading(false);
@@ -80,10 +78,14 @@ function RiskReportContent() {
   }
 
   useEffect(() => {
-    let ignore = false;
-    const key = `${borrowerHash}_${initialGoldFp}`;
-    if (!borrowerHash || fetchedKeyRef.current === key) return;
-    fetchedKeyRef.current = key;
+    let isCurrent = true;
+    if (!borrowerHash) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
 
     const payload = { borrower_hash: borrowerHash };
     if (initialGoldFp) {
@@ -92,21 +94,20 @@ function RiskReportContent() {
 
     api.post('/api/borrowers/search', payload)
       .then((res) => {
-        if (!ignore) {
+        if (isCurrent) {
           setReport(res.data);
           setLoading(false);
         }
       })
       .catch((e) => {
-        if (!ignore) {
-          fetchedKeyRef.current = '';
+        if (isCurrent) {
           setError(e.message);
           setLoading(false);
         }
       });
 
     return () => {
-      ignore = true;
+      isCurrent = false;
     };
   }, [borrowerHash, initialGoldFp]);
 
