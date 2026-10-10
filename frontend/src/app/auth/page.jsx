@@ -14,7 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { generateKeyPair, loadKeyPair, signChallenge } from '@/lib/auth';
 import useAuthStore from '@/store/auth';
 import api from '@/lib/api';
-import { Spinner } from '@/components/ui';
+import { Spinner, ThemeToggle } from '@/components/ui';
 
 const INSTITUTIONS = [
   { msp_id: 'Org1MSP', name: 'Shri Lakshmi Finance Ltd', role: 'Org 1 • Primary / Admin', icon: '🏛️' },
@@ -190,7 +190,10 @@ function AuthPageContent() {
   const selectedInst = INSTITUTIONS.find(i => i.msp_id === selectedBank) || INSTITUTIONS[0];
 
   return (
-    <main className="auth-page" id="auth-main">
+    <main className="auth-page" id="auth-main" style={{ position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 50 }}>
+        <ThemeToggle id="auth-theme-toggle" />
+      </div>
       <div className="auth-card" style={{ maxWidth: '32rem' }}>
         {/* Brand */}
         <div className="auth-card__brand">

@@ -8,7 +8,7 @@
  */
 
 import useAuthStore from '@/store/auth';
-import { Badge } from '@/components/ui';
+import { Badge, ThemeToggle } from '@/components/ui';
 
 export default function Navbar({ title = 'Dashboard', mobileMenuOpen = false, onToggleMobileMenu }) {
   const { lender } = useAuthStore();
@@ -34,7 +34,8 @@ export default function Navbar({ title = 'Dashboard', mobileMenuOpen = false, on
         <h1 className="dash-navbar__title" id="dash-navbar-title">{title}</h1>
       </div>
 
-      <div className="dash-navbar__right">
+      <div className="dash-navbar__right" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <ThemeToggle id="navbar-theme-toggle" />
         {lender && (
           <div className="dash-lender-pill" aria-label="Connected lender">
             <span className="dash-lender-pill__dot" aria-hidden="true" />

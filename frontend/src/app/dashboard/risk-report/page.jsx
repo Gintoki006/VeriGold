@@ -36,7 +36,7 @@ function RiskReportContent() {
   const borrowerHash = searchParams.get('hash');
 
   const [report,       setReport]       = useState(null);
-  const [loading,      setLoading]      = useState(true);
+  const [loading,      setLoading]      = useState(Boolean(borrowerHash));
   const [error,        setError]        = useState(null);
   const [registering,  setRegistering]  = useState(false);
   const [txHash,       setTxHash]       = useState(null);
@@ -79,13 +79,7 @@ function RiskReportContent() {
 
   useEffect(() => {
     let isCurrent = true;
-    if (!borrowerHash) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
+    if (!borrowerHash) return;
 
     const payload = { borrower_hash: borrowerHash };
     if (initialGoldFp) {

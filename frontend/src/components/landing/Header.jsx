@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -56,6 +57,7 @@ export default function Header() {
           <a href="#faq" className="header__nav-link">
             FAQ
           </a>
+          <ThemeToggle style={{ marginRight: '0.25rem' }} />
           <Link href="/auth" className="header__cta">
             Get Started
             <svg

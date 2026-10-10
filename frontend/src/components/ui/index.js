@@ -14,3 +14,4 @@ export { default as HashDisplay } from './HashDisplay';
 export { default as SectionHeader } from './SectionHeader';
 export { default as Spinner } from './Spinner';
 export { default as StatCard } from './StatCard';
+export { default as ThemeToggle } from './ThemeToggle';
