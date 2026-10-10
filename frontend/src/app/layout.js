@@ -41,9 +41,11 @@ export default function RootLayout({ children }) {
                   var theme = saved || (prefersDark ? 'dark' : 'light');
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
                     document.documentElement.setAttribute('data-theme', 'dark');
                   } else {
                     document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
                     document.documentElement.setAttribute('data-theme', 'light');
                   }
                 } catch (e) {}
