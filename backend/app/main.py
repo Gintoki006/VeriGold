@@ -152,7 +152,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ---------------------------------------------------------------------------
 @app.get("/health", tags=["health"])
 async def health():
-    """Health check. Reflects live Redis and DB connectivity."""
+    """Health check. Reflects live Redis, Fabric, and DB connectivity."""
     redis_ok = False
     try:
         redis = await auth_svc.get_redis()
@@ -161,6 +161,17 @@ async def health():
     except Exception:
         pass
 
-    return {"status": "ok", "fabric": False, "redis": redis_ok}
+    fabric_ok = False
+    try:
+        import socket
+        gateway = settings.FABRIC_GATEWAY_URL
+        if gateway and gateway != "stub":
+            host, port = gateway.split(":")
+            with socket.create_connection((host, int(port)), timeout=1.5):
+                fabric_ok = True
+    except Exception:
+        fabric_ok = False
+
+    return {"status": "ok", "fabric": fabric_ok, "redis": redis_ok}
 
 
