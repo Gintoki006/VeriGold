@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  fastapi:
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+    command: ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]

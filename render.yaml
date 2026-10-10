@@ -1,0 +1,62 @@
+services:
+  # FastAPI backend — deployed on Render Web Service
+  - type: web
+    name: verigold-api
+    runtime: python
+    region: singapore   # closest to India for demo latency
+    plan: starter       # upgrade to standard for production
+    rootDir: backend
+    buildCommand: |
+      pip install --no-cache-dir -r requirements.txt
+      alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # ── Required — set these in the Render dashboard (never commit real values) ──
+      - key: DATABASE_URL
+        sync: false     # set manually in dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: BORROWER_HASH_KEY
+        sync: false     # set manually — must match value used to seed DB
+      - key: REDIS_URL
+        fromService:
+          name: verigold-redis
+          type: redis
+          property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
+      # ── Fabric — self-hosted; set to demo machine address ──
+      - key: FABRIC_GATEWAY_URL
+        value: "localhost:7051"   # override with demo machine IP for cloud deploy
+      - key: FABRIC_CHANNEL_NAME
+        value: mychannel
+      - key: CHAINCODE_NAME
+        value: verigold
+      - key: FABRIC_ORG_MSP_ID
+        value: Org1MSP
+      # ── ZK — use fallback for cloud deploy (no Nargo binary available) ──
+      - key: ZK_PROOF_FALLBACK
+        value: "true"
+      - key: ZK_CIRCUIT_PATH
+        value: /app/zk/circuits/exposure_threshold
+      # ── CORS ──
+      - key: FRONTEND_URL
+        value: "https://verigold.vercel.app"   # update after Vercel deploy
+      - key: NEXT_PUBLIC_API_URL
+        value: "https://verigold-api.onrender.com"   # update to your Render URL
+      # ── Rate Limiting ──
+      - key: BORROWER_SEARCH_RATE_LIMIT
+        value: "10"
+      # ── JWT ──
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRY_MINUTES
+        value: "60"
+
+  # Redis for rate limiting and borrower cache
+  - type: redis
+    name: verigold-redis
+    region: singapore
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
