@@ -2,6 +2,7 @@
 VeriGold — FastAPI Application Entry Point
 """
 import logging
+from contextlib import asynccontextmanager
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request
@@ -22,12 +23,52 @@ from app.utils.errors import (
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("VeriGold API starting up...")
+    # Warm Redis pool
+    try:
+        redis = await auth_svc.get_redis()
+        await redis.ping()
+        try:
+            from urllib.parse import urlsplit, urlunsplit
+            parsed = urlsplit(settings.REDIS_URL)
+            if parsed.password:
+                netloc = f"{parsed.username or ''}:***@{parsed.hostname}{f':{parsed.port}' if parsed.port else ''}"
+                safe_url = urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+            else:
+                safe_url = settings.REDIS_URL
+        except Exception:
+            safe_url = "redis://[configured]"
+        logger.info("Redis connected: %s", safe_url)
+    except Exception as exc:
+        logger.warning("Redis not available at startup: %s", exc)
+
+    # Verify DB connectivity
+    try:
+        async with engine.connect() as conn:
+            pass
+        logger.info("Database connected.")
+    except Exception as exc:
+        logger.warning("Database not available at startup: %s", exc)
+
+    yield
+
+    logger.info("VeriGold API shutting down...")
+    if auth_svc._redis_pool is not None:
+        await auth_svc._redis_pool.aclose()
+        logger.info("Redis pool closed.")
+    await engine.dispose()
+    logger.info("DB engine disposed.")
+
+
 app = FastAPI(
     title="VeriGold API",
     description="Privacy-preserving cross-lender gold loan registry",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
@@ -122,44 +163,4 @@ async def health():
 
     return {"status": "ok", "fabric": False, "redis": redis_ok}
 
-# ---------------------------------------------------------------------------
-# Startup / Shutdown hooks
-# ---------------------------------------------------------------------------
-@app.on_event("startup")
-async def startup_event():
-    logger.info("VeriGold API starting up...")
-    # Warm Redis pool
-    try:
-        redis = await auth_svc.get_redis()
-        await redis.ping()
-        try:
-            from urllib.parse import urlsplit, urlunsplit
-            parsed = urlsplit(settings.REDIS_URL)
-            if parsed.password:
-                netloc = f"{parsed.username or ''}:***@{parsed.hostname}{f':{parsed.port}' if parsed.port else ''}"
-                safe_url = urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
-            else:
-                safe_url = settings.REDIS_URL
-        except Exception:
-            safe_url = "redis://[configured]"
-        logger.info("Redis connected: %s", safe_url)
-    except Exception as exc:
-        logger.warning("Redis not available at startup: %s", exc)
 
-    # Verify DB connectivity (does not create tables — use alembic for that)
-    try:
-        async with engine.connect() as conn:
-            pass
-        logger.info("Database connected.")
-    except Exception as exc:
-        logger.warning("Database not available at startup: %s", exc)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("VeriGold API shutting down...")
-    if auth_svc._redis_pool is not None:
-        await auth_svc._redis_pool.aclose()
-        logger.info("Redis pool closed.")
-    await engine.dispose()
-    logger.info("DB engine disposed.")
