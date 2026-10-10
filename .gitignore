@@ -1,0 +1,77 @@
+# Node.js
+node_modules/
+.next/
+dist/
+build/
+.npm/
+.yarn/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+.eggs/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Fabric
+fabric/fabric-samples/
+fabric/crypto-config/
+fabric/channel-artifacts/
+*.block
+*.tx
+*.pb
+
+# Go
+vendor/
+**/vendor/
+chaincode/**/vendor/
+*.test
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets / keys
+*.pem
+*.key
+*.p12
+.env.local
+.env.production
+.env.staging
+.env.*.local
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# ZK artifacts (generated at runtime)
+zk/proofs/*.json
+!zk/proofs/README.md
+!zk/proofs/demo_proof.json
+!zk/proofs/demo_public_inputs.json
+zk/circuits/**/target/
+zk/circuits/**/proofs/
+
+# Agent / transient planning docs
+.agent/
+TODOLIST.md
+task.md
