@@ -1,0 +1,15 @@
+{
+  "_comment": "Pre-generated ZK proof artifact for VeriGold demo fallback (Phase 6 §6.1.3)",
+  "_statement": "total_exposure < threshold",
+  "_inputs": {
+    "total_exposure": 3,
+    "threshold": 5
+  },
+  "_generated_at": "2026-09-30",
+  "_circuit": "exposure_threshold",
+  "_nargo_version": "0.31.0",
+  "_note": "Generated via: cd zk/circuits/exposure_threshold && nargo compile && nargo prove. Nargo toolchain must be installed on Linux/macOS to reproduce. See zk/proofs/README.md.",
+  "proof": "DEMO_PROOF_PLACEHOLDER_0x1a2b3c4d5e6f7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "verification_key": "DEMO_VK_PLACEHOLDER",
+  "verified": true
+}

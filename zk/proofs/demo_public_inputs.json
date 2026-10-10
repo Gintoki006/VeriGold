@@ -1,0 +1,6 @@
+{
+  "_comment": "Public inputs for the pre-generated VeriGold demo ZK proof (Phase 6 §6.1.3)",
+  "_statement": "total_exposure < threshold",
+  "threshold": 5,
+  "_note": "total_exposure is NOT included here — it is the private input and is never revealed. Only the threshold (public input) is part of the verifiable public statement."
+}
