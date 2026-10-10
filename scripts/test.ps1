@@ -1,4 +1,4 @@
-# VeriGold — Test Runner Script (PowerShell)
+# VeriGold - Test Runner Script (PowerShell)
 # Runs the complete test suite: backend pytest, chaincode go test, frontend build.
 
 $ErrorActionPreference = "Continue"
@@ -6,13 +6,13 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  VeriGold — Automated Test Suite Runner " -ForegroundColor Cyan
+Write-Host "  VeriGold - Automated Test Suite Runner " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 $FailedTests = 0
 
 # 1. Backend tests (pytest)
-Write-Host "`n[1/3] Running backend unit & integration tests..." -ForegroundColor Yellow
+Write-Host "`n[1/3] Running backend unit and integration tests..." -ForegroundColor Yellow
 Push-Location "$RepoRoot\backend"
 try {
     python -m pytest

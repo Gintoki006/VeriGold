@@ -1,11 +1,11 @@
-# VeriGold — Codebase & Environment Health Auditor (PowerShell)
+# VeriGold - Codebase and Environment Health Auditor (PowerShell)
 # Verifies configuration, linting, and connectivity prerequisites.
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  VeriGold — Health & Pre-flight Checker  " -ForegroundColor Cyan
+Write-Host "  VeriGold - Health and Pre-flight Checker  " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Environment configuration

@@ -1,4 +1,4 @@
-# VeriGold — Automated Environment Setup Script (PowerShell)
+# VeriGold - Automated Environment Setup Script (PowerShell)
 # Sets up dependencies for backend, frontend, and smart contract toolchains.
 
 $ErrorActionPreference = "Stop"
@@ -6,7 +6,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "  VeriGold — Local Setup & Initialization " -ForegroundColor Cyan
+Write-Host "  VeriGold - Local Setup and Initialization " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Repository root: $RepoRoot"
 
