@@ -5,9 +5,19 @@ All environment variables are loaded here via pydantic-settings.
 Risk scoring weights are kept in RiskConfig — never hardcoded inline.
 """
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _resolve_fabric_bridge_script() -> str:
+    p = Path(__file__).resolve().parents[3]
+    if p.drive:
+        drive = p.drive.replace(":", "").lower()
+        return f"/mnt/{drive}" + p.as_posix()[2:] + "/fabric/network/cc-client.sh"
+    return str(p / "fabric" / "network" / "cc-client.sh")
 
 
 class Settings(BaseSettings):
@@ -43,8 +53,8 @@ class Settings(BaseSettings):
     ZK_CIRCUIT_PATH: str = "/app/zk/circuits/exposure_threshold"
     ZK_PROOF_FALLBACK: bool = False
 
-    # Fabric bridge (WSL peer CLI path — configurable for portability)
-    FABRIC_BRIDGE_SCRIPT: str = "/mnt/d/Proj_hackathon/VeriGold/fabric/network/cc-client.sh"
+    # Fabric bridge (WSL peer CLI path — dynamically resolved relative to repository root)
+    FABRIC_BRIDGE_SCRIPT: str = _resolve_fabric_bridge_script()
 
     # Noir/Nargo binary path (overridable for WSL/Linux environments)
     NARGO_PATH: str = "/home/sayan/.nargo/bin/nargo"
