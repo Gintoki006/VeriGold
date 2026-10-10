@@ -26,33 +26,56 @@
 
 ---
 
-## Quick Start (Local Development)
+## Quick Start (Automated Scripts)
 
-### 1. Start infrastructure (FastAPI + Redis)
+We provide cross-platform automated runner scripts in `scripts/`:
+
+```powershell
+# Windows (PowerShell):
+.\scripts\setup.ps1   # Installs frontend & backend dependencies, sets up .env
+.\scripts\check.ps1   # Runs preflight audit (linting, compilation, configs)
+.\scripts\test.ps1    # Runs complete test suite (pytest, go test, next build)
+.\scripts\dev.ps1     # Starts both backend (:8000) and frontend (:3000)
+```
+
+```bash
+# Linux / macOS (Bash):
+./scripts/setup.sh    # Installs dependencies & prepares .env
+./scripts/check.sh    # Preflight audit
+./scripts/test.sh     # Runs all test suites
+./scripts/dev.sh      # Starts development servers
+```
+
+---
+
+## Manual Quick Start (Step-by-Step)
+
+### 1. Configure environment & start infrastructure
 
 ```bash
 cp backend/.env.example backend/.env
-# Edit backend/.env — fill in all secrets
+# Edit backend/.env — fill in any custom keys (or use provided defaults for dev)
 
 docker compose up --build
 ```
 
 FastAPI will be available at `http://localhost:8000`.
 
-### 2. Start the Fabric test network
+### 2. Start the Fabric network
 
 ```bash
 cd fabric
 ./network/start.sh
 ./network/deploy-chaincode.sh
 ./network/enroll-lenders.sh
+cd ..
 ```
 
 ### 3. Start the frontend dev server
 
 ```bash
 cp frontend/.env.example frontend/.env.local
-# Edit frontend/.env.local — set NEXT_PUBLIC_API_URL=http://localhost:8000
+# Set NEXT_PUBLIC_API_URL=http://localhost:8000
 
 cd frontend
 npm install
