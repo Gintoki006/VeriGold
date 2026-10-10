@@ -1,0 +1,6 @@
+[package]
+name = "exposure_threshold"
+type = "bin"
+authors = ["VeriGold Team"]
+
+[dependencies]
