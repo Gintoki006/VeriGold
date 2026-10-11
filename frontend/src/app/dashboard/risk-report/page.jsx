@@ -631,7 +631,12 @@ function RiskReportContent() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                     <div>
                       <span className="dash-label" style={{ fontSize: '0.7rem' }}>PLEDGE ID</span>
-                      <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'monospace' }}>{registeredPledgeId}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'monospace' }}>{registeredPledgeId}</strong>
+                        {registeredPledgeId && (
+                          <CopyButton text={registeredPledgeId} ariaLabel="Copy pledge ID" />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <span className="dash-label" style={{ fontSize: '0.7rem' }}>EXPOSURE BUCKET</span>

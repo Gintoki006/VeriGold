@@ -1,0 +1,55 @@
+networks:
+  fabric_test:
+    name: fabric_test
+    external: true
+
+services:
+  explorer-db:
+    image: hyperledger/explorer-db:latest
+    container_name: explorer-db
+    hostname: explorer-db
+    environment:
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWORD=password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U hppoc -d fabricexplorer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fabric_test
+    volumes:
+      - explorer-db-data:/var/lib/postgresql/data
+
+  explorer:
+    image: hyperledger/explorer:latest
+    container_name: explorer
+    hostname: explorer
+    environment:
+      - DATABASE_HOST=explorer-db
+      - DATABASE_PORT=5432
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=hppoc
+      - DATABASE_PASSWD=password
+      - LOG_LEVEL_APP=info
+      - LOG_LEVEL_DB=info
+      - LOG_LEVEL_CONSOLE=info
+      - LOG_CONSOLE_STDOUT=true
+      - DISCOVERY_AS_LOCALHOST=false
+      - PORT=8080
+    volumes:
+      - ./config.json:/opt/explorer/app/platform/fabric/config.json
+      - ./connection-profile.json:/opt/explorer/app/platform/fabric/connection-profile.json
+      - ./FabricGateway.js:/opt/explorer/app/platform/fabric/gateway/FabricGateway.js
+      - ../fabric-samples/test-network/organizations:/tmp/crypto
+    ports:
+      - "8080:8080"
+    depends_on:
+      explorer-db:
+        condition: service_healthy
+    networks:
+      - fabric_test
+
+volumes:
+  explorer-db-data:
