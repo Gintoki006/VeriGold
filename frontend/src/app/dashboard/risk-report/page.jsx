@@ -9,7 +9,7 @@
  *            recommendation banner, register pledge, tx hash display.
  */
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
 import { Badge, Button, Spinner, ErrorState, CopyButton } from '@/components/ui';
@@ -56,11 +56,16 @@ function RiskReportContent() {
   const [boundGoldFp, setBoundGoldFp] = useState(null);
   const [registeredPledgeId, setRegisteredPledgeId] = useState(null);
 
-  async function fetchReport(force = false) {
+  const fetchedRef = useRef('');
+  const inFlightRef = useRef(false);
+
+  const fetchReport = useCallback(async (force = false) => {
     if (!borrowerHash) {
       setLoading(false);
       return;
     }
+    if (inFlightRef.current && !force) return;
+    inFlightRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -74,36 +79,17 @@ function RiskReportContent() {
       setError(e.message);
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
-  }
+  }, [borrowerHash, initialGoldFp]);
 
   useEffect(() => {
-    let isCurrent = true;
     if (!borrowerHash) return;
-
-    const payload = { borrower_hash: borrowerHash };
-    if (initialGoldFp) {
-      payload.gold_fingerprint = initialGoldFp;
-    }
-
-    api.post('/api/borrowers/search', payload)
-      .then((res) => {
-        if (isCurrent) {
-          setReport(res.data);
-          setLoading(false);
-        }
-      })
-      .catch((e) => {
-        if (isCurrent) {
-          setError(e.message);
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [borrowerHash, initialGoldFp]);
+    const key = `${borrowerHash}:${initialGoldFp}`;
+    if (fetchedRef.current === key) return;
+    fetchedRef.current = key;
+    fetchReport();
+  }, [borrowerHash, initialGoldFp, fetchReport]);
 
   // Auto-map INR to Amount Range (PRD §11.2)
   function handleInrChange(val) {

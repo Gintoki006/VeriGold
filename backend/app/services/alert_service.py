@@ -11,6 +11,7 @@ Called from borrower_service after risk_service returns.
 """
 import logging
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.fraud_alert import AlertStatus, AlertType, FraudAlert
@@ -59,6 +60,20 @@ async def maybe_create_alert(
             f"with aggregate exposure sum {risk_report.get('total_amount_range_sum', '?')}. "
             f"Risk score: {risk_report.get('score', '?')}."
         )
+
+    # Deduplication: do not create multiple open alerts for the same borrower
+    dup_stmt = (
+        select(FraudAlert.id)
+        .where(
+            FraudAlert.borrower_hash == borrower_hash,
+            FraudAlert.status == AlertStatus.open,
+        )
+        .limit(1)
+    )
+    existing_alert = await db.scalar(dup_stmt)
+    if existing_alert:
+        logger.debug("FraudAlert already open for borrower=%s, skipping duplicate", borrower_hash[:8])
+        return None
 
     alert = FraudAlert(
         borrower_hash=borrower_hash,
