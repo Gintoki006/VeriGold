@@ -1,33 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
+import MetricsStrip from "@/components/landing/MetricsStrip";
+import CapabilitiesSection from "@/components/landing/CapabilitiesSection";
 import AboutSection from "@/components/landing/AboutSection";
-import BenefitsSection from "@/components/landing/BenefitsSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import ComparisonSection from "@/components/landing/ComparisonSection";
-import StatsSection from "@/components/landing/StatsSection";
 import FaqSection from "@/components/landing/FaqSection";
 import CtaSection from "@/components/landing/CtaSection";
 import Footer from "@/components/landing/Footer";
-import ScrollReveal from "@/components/landing/ScrollReveal";
+import DemoModal from "@/components/landing/DemoModal";
 
 export default function HomePage() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
   return (
-    <>
-      <ScrollReveal />
+    <div className="swiss-page-wrapper swiss-grid-bg">
       <Header />
       <main>
-        <Hero animate={true} />
+        <Hero onOpenDemo={() => setDemoOpen(true)} />
+        <MetricsStrip />
+        <CapabilitiesSection />
         <AboutSection />
-        <BenefitsSection />
-        <HowItWorksSection />
+        <HowItWorksSection onOpenDemo={() => setDemoOpen(true)} />
         <ComparisonSection />
-        <StatsSection />
         <FaqSection />
-        <CtaSection />
+        <CtaSection onOpenDemo={() => setDemoOpen(true)} />
       </main>
       <Footer />
-    </>
+      <DemoModal isOpen={demoOpen} onClose={() => setDemoOpen(false)} />
+    </div>
   );
 }
