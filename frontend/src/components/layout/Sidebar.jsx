@@ -137,8 +137,8 @@ export default function Sidebar({ open = false, onClose }) {
       {/* Brand */}
       <div className="dash-sidebar__brand">
         <Link href="/dashboard" className="dash-sidebar__brand-link" onClick={handleLinkClick}>
-          <div className="dash-sidebar__brand-icon" aria-hidden="true">VG</div>
           <span className="dash-sidebar__brand-name">VeriGold</span>
+          <span className="dash-sidebar__brand-tm" aria-hidden="true">™</span>
         </Link>
         {onClose && (
           <button

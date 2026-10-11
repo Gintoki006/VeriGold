@@ -30,20 +30,26 @@ elif _raw_url.startswith("postgres://"):
 else:
     _async_url = _raw_url
 
-engine = create_async_engine(
-    _async_url,
-    echo=False,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=3,
-    pool_recycle=180,
-    connect_args={
-        "timeout": None,
-        "command_timeout": None,
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
-    },
-)
+if "sqlite" in _async_url:
+    engine = create_async_engine(
+        _async_url,
+        echo=False,
+    )
+else:
+    engine = create_async_engine(
+        _async_url,
+        echo=False,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=3,
+        pool_recycle=180,
+        connect_args={
+            "timeout": None,
+            "command_timeout": None,
+            "statement_cache_size": 0,
+            "prepared_statement_cache_size": 0,
+        },
+    )
 
 # ---------------------------------------------------------------------------
 # Session factory
