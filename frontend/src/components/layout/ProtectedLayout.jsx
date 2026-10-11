@@ -8,20 +8,32 @@
  * On first render with a token, hydrates lender profile from /api/auth/me.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar  from './Navbar';
 import useAuthStore from '@/store/auth';
 import api from '@/lib/api';
 
+const emptySubscribe = () => () => {};
+
+function useMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+}
+
 export default function ProtectedLayout({ children, title }) {
   const { isAuthenticated, accessToken, lender, setLender, logout } = useAuthStore();
   const router = useRouter();
-  const [hydrated, setHydrated] = useState(() => Boolean(isAuthenticated && accessToken && lender));
+  const isMounted = useMounted();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (!isMounted) return;
+
     if (!isAuthenticated || !accessToken) {
       router.replace(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
@@ -32,7 +44,6 @@ export default function ProtectedLayout({ children, title }) {
       api.get('/api/auth/me')
         .then((res) => {
           setLender(res.data);
-          setHydrated(true);
         })
         .catch(() => {
           // Token invalid or expired — clear auth state and redirect to /auth
@@ -40,7 +51,7 @@ export default function ProtectedLayout({ children, title }) {
           router.replace(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
         });
     }
-  }, [isAuthenticated, accessToken, lender, logout, router, setLender]);
+  }, [isMounted, isAuthenticated, accessToken, lender, logout, router, setLender]);
 
   useEffect(() => {
     const handleUnauthorized = (e) => {
@@ -51,7 +62,7 @@ export default function ProtectedLayout({ children, title }) {
     return () => window.removeEventListener('vg:auth:unauthorized', handleUnauthorized);
   }, [router]);
 
-  if (!hydrated) {
+  if (!isMounted || !isAuthenticated || !accessToken) {
     return (
       <div className="dash-layout" style={{ alignItems: 'center', justifyContent: 'center' }}>
         <div className="dash-spinner">

@@ -61,9 +61,9 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link href="/dashboard/zk-proof" className="footer__col-link">
+                <a href="#how-it-works" className="footer__col-link">
                   Zero-Knowledge Proofs
-                </Link>
+                </a>
               </li>
               <li>
                 <Link href="/dashboard/risk-report" className="footer__col-link">
