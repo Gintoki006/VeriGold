@@ -1,3 +1,4 @@
+import logging
 """
 VeriGold — Redis Sliding Window Rate Limiter
 
@@ -28,6 +29,7 @@ from app.models.lender import Lender
 from app.services.auth_service import get_redis
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 _WINDOW_SECONDS = 60
 _RATE_KEY_PREFIX = "rate:borrower_search:"
@@ -69,31 +71,36 @@ async def borrower_search_rate_limit(
     FastAPI dependency: enforce per-lender sliding-window rate limit.
     Raises HTTP 429 with Retry-After if the limit is exceeded.
     """
-    redis = await get_redis()
-    key = f"{_RATE_KEY_PREFIX}{lender.id}"
-    now = time.time()
-    limit = settings.BORROWER_SEARCH_RATE_LIMIT
+    try:
+        redis = await get_redis()
+        if redis is None:
+            return
+        key = f"{_RATE_KEY_PREFIX}{lender.id}"
+        now = time.time()
+        limit = settings.BORROWER_SEARCH_RATE_LIMIT
 
-    result = await redis.eval(
-        _SLIDING_WINDOW_LUA,
-        1,          # number of keys
-        key,        # KEYS[1]
-        now,        # ARGV[1]
-        _WINDOW_SECONDS,  # ARGV[2]
-        limit,      # ARGV[3]
-    )
-
-    allowed, retry_after = int(result[0]), int(result[1])
-
-    if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={
-                "error": "rate_limit_exceeded",
-                "retry_after": retry_after,
-            },
-            headers={"Retry-After": str(retry_after)},
+        result = await redis.eval(
+            _SLIDING_WINDOW_LUA,
+            1,          # number of keys
+            key,        # KEYS[1]
+            now,        # ARGV[1]
+            _WINDOW_SECONDS,  # ARGV[2]
+            limit,      # ARGV[3]
         )
+        allowed, retry_after = int(result[0]), int(result[1])
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error": "rate_limit_exceeded",
+                    "retry_after": retry_after,
+                },
+                headers={"Retry-After": str(retry_after)},
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Redis rate limiter unavailable, failing open: %s", exc)
 
 
 async def check_rate_limit(lender_id: int, redis) -> None:
@@ -101,18 +108,26 @@ async def check_rate_limit(lender_id: int, redis) -> None:
     Imperative rate-limit check for use in route handlers that already hold
     a redis instance. Raises HTTP 429 if exceeded.
     """
+    if redis is None:
+        return
     key = f"{_RATE_KEY_PREFIX}{lender_id}"
     now = time.time()
     limit = settings.BORROWER_SEARCH_RATE_LIMIT
 
-    result = await redis.eval(
-        _SLIDING_WINDOW_LUA,
-        1,
-        key,
-        now,
-        _WINDOW_SECONDS,
-        limit,
-    )
+    try:
+        result = await redis.eval(
+            _SLIDING_WINDOW_LUA,
+            1,
+            key,
+            now,
+            _WINDOW_SECONDS,
+            limit,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Redis rate limit check failed, failing open: %s", exc)
+        return
 
     allowed, retry_after = int(result[0]), int(result[1])
     if not allowed:

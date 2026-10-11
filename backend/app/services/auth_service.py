@@ -14,6 +14,7 @@ Security invariants:
 """
 import logging
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 import redis.asyncio as aioredis
@@ -38,13 +39,20 @@ _NONCE_TTL = 300  # seconds — 5 minutes
 # Redis helpers — module-level singleton pool
 # ---------------------------------------------------------------------------
 _redis_pool: aioredis.Redis | None = None
+_local_nonces: dict[str, tuple[str, float]] = {}
 
 
 async def get_redis() -> aioredis.Redis:
     global _redis_pool
     if _redis_pool is None:
         _redis_pool = await aioredis.from_url(
-            settings.REDIS_URL, encoding="utf-8", decode_responses=True
+            settings.REDIS_URL,
+            encoding="utf-8",
+            decode_responses=True,
+            socket_timeout=3.0,
+            socket_connect_timeout=3.0,
+            health_check_interval=30,
+            retry_on_timeout=True,
         )
     return _redis_pool
 
@@ -67,8 +75,13 @@ async def issue_challenge(identity_ref: str) -> dict:
         )
 
     nonce = secrets.token_hex(32)
-    redis = await get_redis()
-    await redis.set(f"{_NONCE_PREFIX}{identity_ref}", nonce, ex=_NONCE_TTL)
+    nonce_key = f"{_NONCE_PREFIX}{identity_ref}"
+    _local_nonces[nonce_key] = (nonce, time.time() + _NONCE_TTL)
+    try:
+        redis = await get_redis()
+        await redis.set(nonce_key, nonce, ex=_NONCE_TTL)
+    except Exception as exc:
+        logger.warning("Redis store nonce failed, stored in memory fallback: %s", exc)
 
     return {
         "nonce": nonce,
@@ -104,15 +117,31 @@ async def verify_challenge(
     import base64
 
     # --- Fetch & consume nonce (one-time use) ---
-    redis = await get_redis()
     nonce_key = f"{_NONCE_PREFIX}{identity_ref}"
-    nonce = await redis.get(nonce_key)
+    nonce = None
+    try:
+        redis = await get_redis()
+        nonce = await redis.get(nonce_key)
+        if nonce:
+            try:
+                await redis.delete(nonce_key)
+            except Exception:
+                pass
+    except Exception as exc:
+        logger.warning("Redis get nonce failed: %s", exc)
+
+    if not nonce and nonce_key in _local_nonces:
+        stored_val, exp = _local_nonces.pop(nonce_key, (None, 0))
+        if exp >= time.time():
+            nonce = stored_val
+    else:
+        _local_nonces.pop(nonce_key, None)
+
     if not nonce:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Challenge not found or expired. Request a new challenge.",
         )
-    await redis.delete(nonce_key)  # single-use — prevents replay
 
     # --- Verify Ed25519 signature ---
     message = f"Sign this to authenticate with VeriGold: {nonce}"

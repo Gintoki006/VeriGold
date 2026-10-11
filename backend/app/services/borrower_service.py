@@ -50,14 +50,26 @@ async def search_borrower(
     Returns a risk report dict matching PRD §15 output schema.
     """
     # ------------------------------------------------------------------
-    # 1. Redis cache check
+    # 1. Redis cache check (resilient — never crash if Redis times out or is offline)
     # ------------------------------------------------------------------
     cache_key = f"borrower_summary:{borrower_hash}"
-    cached = await redis.get(cache_key)
+    cached = None
+    if redis is not None:
+        try:
+            cached = await redis.get(cache_key)
+        except Exception as exc:
+            logger.warning("Redis cache read failed for %s: %s", borrower_hash[:8], exc)
+
+    borrower_summary = None
     if cached:
         logger.debug("Borrower cache hit: %s", borrower_hash[:8])
-        borrower_summary = json.loads(cached)
-    else:
+        try:
+            borrower_summary = json.loads(cached)
+        except Exception as exc:
+            logger.warning("Failed to decode cached borrower summary for %s: %s", borrower_hash[:8], exc)
+            borrower_summary = None
+
+    if not borrower_summary:
         # ---------------------------------------------------------------
         # 2. Fabric: GetBorrowerSummary
         # ---------------------------------------------------------------
@@ -66,7 +78,11 @@ async def search_borrower(
         )
         borrower_summary = json.loads(raw)
         raw_str = raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
-        await redis.set(cache_key, raw_str, ex=_BORROWER_CACHE_TTL)
+        if redis is not None:
+            try:
+                await redis.set(cache_key, raw_str, ex=_BORROWER_CACHE_TTL)
+            except Exception as exc:
+                logger.warning("Redis cache write failed for %s: %s", borrower_hash[:8], exc)
         logger.debug("Fabric GetBorrowerSummary fetched for %s", borrower_hash[:8])
 
     # ------------------------------------------------------------------

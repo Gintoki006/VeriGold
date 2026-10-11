@@ -104,8 +104,14 @@ async def search(
     db: AsyncSession = Depends(get_db),
 ):
     # Rate limit check
-    redis = await get_redis()
-    await check_rate_limit(lender_id=lender.id, redis=redis)
+    redis = None
+    try:
+        redis = await get_redis()
+        await check_rate_limit(lender_id=lender.id, redis=redis)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Redis unavailable during search rate limit check: %s", exc)
 
     fabric = get_fabric_client(lender.fabric_msp_id)
 
