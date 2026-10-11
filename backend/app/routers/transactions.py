@@ -34,9 +34,12 @@ async def list_transactions(
     db: AsyncSession = Depends(get_db),
 ):
     offset = (page - 1) * page_size
+    inst_lenders = select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id)
+    where_cond = (Transaction.lender_id == lender.id) | Transaction.lender_id.in_(inst_lenders)
+
     stmt = (
         select(Transaction)
-        .where(Transaction.lender_id == lender.id)
+        .where(where_cond)
         .order_by(Transaction.created_at.desc())
         .offset(offset)
         .limit(page_size)

@@ -46,9 +46,10 @@ async def list_alerts(
     settings = get_settings()
 
     # Subquery: borrower hashes for which this lender holds an active pledge
+    inst_lenders = select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id)
     active_borrowers_stmt = (
         select(PledgeMirror.borrower_hash)
-        .where(PledgeMirror.lender_id == lender.id)
+        .where((PledgeMirror.lender_id == lender.id) | PledgeMirror.lender_id.in_(inst_lenders))
         .where(PledgeMirror.status == PledgeStatus.active)
         .distinct()
     )
@@ -63,7 +64,9 @@ async def list_alerts(
         # Check if lender has any pledges; if so filter by them, otherwise allow all demo alerts
         pledge_count = (
             await db.execute(
-                select(PledgeMirror.id).where(PledgeMirror.lender_id == lender.id).limit(1)
+                select(PledgeMirror.id).where(
+                    (PledgeMirror.lender_id == lender.id) | PledgeMirror.lender_id.in_(inst_lenders)
+                ).limit(1)
             )
         ).scalar_one_or_none()
         if pledge_count is not None:

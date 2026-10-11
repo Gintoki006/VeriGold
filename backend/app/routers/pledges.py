@@ -156,12 +156,15 @@ async def list_pledges(
     actual_limit = limit if limit is not None else page_size
     offset = (page - 1) * actual_limit
 
-    count_stmt = select(func.count(PledgeMirror.id)).where(PledgeMirror.lender_id == lender.id)
+    inst_lenders = select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id)
+    where_cond = (PledgeMirror.lender_id == lender.id) | PledgeMirror.lender_id.in_(inst_lenders)
+
+    count_stmt = select(func.count(PledgeMirror.id)).where(where_cond)
     total = (await db.execute(count_stmt)).scalar() or 0
 
     stmt = (
         select(PledgeMirror)
-        .where(PledgeMirror.lender_id == lender.id)
+        .where(where_cond)
         .order_by(PledgeMirror.created_at.desc())
         .offset(offset)
         .limit(actual_limit)
@@ -208,7 +211,11 @@ async def get_pledge(
         raise PledgeNotFoundError(pledge_id)
 
     if mirror.lender_id != lender.id:
-        raise UnauthorizedPledgeError(pledge_id)
+        inst_lender_ids = (
+            await db.execute(select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id))
+        ).scalars().all()
+        if mirror.lender_id not in inst_lender_ids:
+            raise UnauthorizedPledgeError(pledge_id)
 
     return {
         "id": mirror.pledge_id,
