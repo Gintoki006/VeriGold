@@ -5,16 +5,15 @@ import Link from "next/link";
 import { X, CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, RefreshCw } from "lucide-react";
 
 export default function DemoModal({ isOpen, onClose }) {
+  if (!isOpen) return null;
+  return <DemoModalDialog onClose={onClose} />;
+}
+
+function DemoModalDialog({ onClose }) {
   const [step, setStep] = useState("running"); // "running" | "done"
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!isOpen) {
-      setStep("running");
-      setProgress(0);
-      return;
-    }
-
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -27,9 +26,7 @@ export default function DemoModal({ isOpen, onClose }) {
     }, 450);
 
     return () => clearInterval(interval);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  }, []);
 
   return (
     <div className="swiss-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="demo-title">
