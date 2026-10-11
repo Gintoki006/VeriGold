@@ -9,7 +9,7 @@
  *   - JWT issued with corresponding fabric_msp_id and organization_name
  */
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useSyncExternalStore, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { generateKeyPair, loadKeyPair, signChallenge } from '@/lib/auth';
 import useAuthStore from '@/store/auth';
@@ -37,18 +37,33 @@ function stepStatus(currentStep, stepNum) {
 }
 
 
+const emptySubscribe = () => () => {};
+
+function useMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+}
+
 function AuthPageContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const redirect     = searchParams.get('redirect') || '/dashboard';
   const { login, logout, isAuthenticated } = useAuthStore();
 
+  const isMounted = useMounted();
   const [selectedBank, setSelectedBank] = useState('Org1MSP');
-  const [keyInfo,      setKeyInfo]      = useState(() => (typeof window !== 'undefined' ? loadKeyPair() : null));
-  const [step,         setStep]         = useState(() => (typeof window !== 'undefined' && loadKeyPair() ? 2 : 1));
+  const [explicitKey,  setKeyInfo]      = useState(undefined);
+  const [explicitStep, setStep]         = useState(undefined);
   const [error,        setError]        = useState(null);
   const [isLoading,    setIsLoading]    = useState(false);
   const [challengeId,  setChallengeId]  = useState(null);
+
+  const initialKey = isMounted ? loadKeyPair() : null;
+  const keyInfo    = explicitKey !== undefined ? explicitKey : initialKey;
+  const step       = explicitStep !== undefined ? explicitStep : (keyInfo ? 2 : 1);
 
   // Redirect immediately only if already logged in with a VERIFIED session
   useEffect(() => {

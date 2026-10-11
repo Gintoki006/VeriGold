@@ -136,9 +136,12 @@ async def search_history(
     lender: Lender = Depends(get_current_lender),
     db: AsyncSession = Depends(get_db),
 ):
+    inst_lenders = select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id)
+    where_cond = (QueryModel.lender_id == lender.id) | QueryModel.lender_id.in_(inst_lenders)
+
     stmt = (
         select(QueryModel)
-        .where(QueryModel.lender_id == lender.id)
+        .where(where_cond)
         .order_by(QueryModel.created_at.desc())
         .limit(min(limit, 50))
     )

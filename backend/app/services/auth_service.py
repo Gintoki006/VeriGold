@@ -175,9 +175,26 @@ async def verify_challenge(
     target_org_name = _INSTITUTION_NAMES.get(target_msp, f"Demo Lender ({target_msp})")
 
     # --- Look up lender, create or update on login ---
-    stmt = select(Lender).where(Lender.login_identity_ref == identity_ref)
+    # First: find canonical institutional record by fabric_msp_id
+    stmt = (
+        select(Lender)
+        .where(Lender.fabric_msp_id == target_msp)
+        .order_by(Lender.id.asc())
+        .limit(1)
+    )
     result = await db.execute(stmt)
     lender: Lender | None = result.scalar_one_or_none()
+
+    # Second: fallback by login_identity_ref if not found by msp
+    if lender is None:
+        stmt_ref = (
+            select(Lender)
+            .where(Lender.login_identity_ref == identity_ref)
+            .order_by(Lender.id.asc())
+            .limit(1)
+        )
+        res_ref = await db.execute(stmt_ref)
+        lender = res_ref.scalar_one_or_none()
 
     if lender is None:
         # Auto-create as active for development / demo mode
@@ -190,12 +207,12 @@ async def verify_challenge(
         db.add(lender)
         await db.commit()
         await db.refresh(lender)
-    elif msp_id and lender.fabric_msp_id != msp_id:
-        # Allow switching institution profile in development/demo mode
-        lender.fabric_msp_id = target_msp
-        lender.organization_name = target_org_name
-        await db.commit()
-        await db.refresh(lender)
+    else:
+        # Ensure organization name is synchronized
+        if target_org_name and lender.organization_name != target_org_name:
+            lender.organization_name = target_org_name
+            await db.commit()
+            await db.refresh(lender)
 
     if lender.status != LenderStatus.active:
         raise HTTPException(

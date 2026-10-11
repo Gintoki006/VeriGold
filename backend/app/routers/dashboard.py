@@ -28,10 +28,15 @@ async def get_dashboard_stats(
     now = datetime.now(timezone.utc)
     start_of_day = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
-    # 1. Queries today by this lender
+    # Subquery for all lender IDs belonging to the same institution
+    inst_lenders = select(Lender.id).where(Lender.fabric_msp_id == lender.fabric_msp_id)
+    lender_match = (Query.lender_id == lender.id) | Query.lender_id.in_(inst_lenders)
+    pledge_match = (PledgeMirror.lender_id == lender.id) | PledgeMirror.lender_id.in_(inst_lenders)
+
+    # 1. Queries today by this lender / institution
     q_stmt = (
         select(func.count(Query.id))
-        .where(Query.lender_id == lender.id)
+        .where(lender_match)
         .where(Query.created_at >= start_of_day)
     )
     queries_today = (await db.execute(q_stmt)).scalar() or 0
@@ -39,7 +44,7 @@ async def get_dashboard_stats(
     # 2. My active pledges
     p_stmt = (
         select(func.count(PledgeMirror.id))
-        .where(PledgeMirror.lender_id == lender.id)
+        .where(pledge_match)
         .where(PledgeMirror.status == PledgeStatus.active)
     )
     my_active_pledges = (await db.execute(p_stmt)).scalar() or 0
@@ -47,7 +52,7 @@ async def get_dashboard_stats(
     # 3. Open high-risk alerts associated with this lender's active borrowers
     active_borrowers_stmt = (
         select(PledgeMirror.borrower_hash)
-        .where(PledgeMirror.lender_id == lender.id)
+        .where(pledge_match)
         .distinct()
     )
     a_stmt = (

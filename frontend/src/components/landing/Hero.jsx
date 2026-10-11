@@ -1,134 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import HeroCanvas from "./HeroCanvas";
+import { ArrowRight, Play } from "lucide-react";
 
-export default function Hero({ animate }) {
-  const animClass = animate ? "animate" : "";
-
+export default function Hero({ onOpenDemo }) {
   return (
-    <section className="hero" id="hero">
-      <div className="hero__bg">
-        <HeroCanvas />
-      </div>
-
-      <div className="container hero__inner">
-        <div className="hero__content">
-          <div className={`hero__badge ${animClass}`} id="heroBadge">
-            <span className="hero__badge-dot" />
-            Privacy-First Gold Loan Registry
+    <section className="swiss-hero" id="hero">
+      <div className="swiss-container swiss-hero-container">
+        <div className="swiss-hero-content">
+          {/* Eyebrow Label tailored to VeriGold */}
+          <div className="swiss-eyebrow" id="heroEyebrow">
+            <span className="swiss-eyebrow-dash" aria-hidden="true" />
+            <span className="swiss-eyebrow-text">India&apos;s Cross-Lender Gold Loan Registry</span>
           </div>
 
-          <h1 className={`hero__title ${animClass}`} id="heroTitle">
-            <span className="hero__title-line">Verify Before</span>
-            <span className="hero__title-line">You Lend.</span>
+          {/* Oversized Editorial Headline */}
+          <h1 className="swiss-hero-title" id="heroTitle">
+            <span className="swiss-hero-title-line">Verify before</span>
+            <span className="swiss-hero-title-line">you lend.</span>
           </h1>
 
-          <p className={`hero__subtitle ${animClass}`} id="heroSubtitle">
-            India&apos;s cross-lender gold loan registry. Detect duplicate
-            pledges and assess borrower exposure across every lender — without
-            exposing a single byte of private data.
-          </p>
+          {/* Hero Lower Row: VeriGold value proposition on left, CTAs on right */}
+          <div className="swiss-hero-lower">
+            <div className="swiss-hero-desc-wrap">
+              <p className="swiss-hero-description" id="heroSubtitle">
+                Detect duplicate pledges and verify borrower exposure across India&apos;s ₹8L Cr gold loan
+                market in under 10 seconds — without exposing a single byte of private customer data.
+              </p>
+              <div className="swiss-hero-subnote">
+                <span className="swiss-status-dot" />
+                <span>HMAC-SHA256 Identity • Hyperledger Fabric Consensus • Gold Fingerprinting • ZK Proofs</span>
+              </div>
+            </div>
 
-          <div className={`hero__actions ${animClass}`} id="heroActions">
-            <Link href="/auth" className="btn btn--primary">
-              Start Verifying
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            {/* CTA Buttons */}
+            <div className="swiss-hero-actions" id="heroActions">
+              <Link href="/auth" className="swiss-btn-primary" id="heroPrimaryCta">
+                <span>Start Verifying</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <button
+                type="button"
+                onClick={onOpenDemo || (() => {
+                  const el = document.getElementById("how-it-works");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                })}
+                className="swiss-btn-secondary"
+                id="heroSecondaryCta"
               >
-                <path d="M7 17L17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </Link>
-            <a href="#how-it-works" className="btn btn--outline">
-              <span className="btn-text">Learn How It Works</span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M7 17L17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </a>
-          </div>
-
-          <div className={`hero__benefits ${animClass}`} id="heroBenefits">
-            <div className="hero__benefit">
-              <div className="hero__benefit-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
-              </div>
-              <span className="hero__benefit-text">Privacy-First HMAC</span>
-            </div>
-
-            <div className="hero__benefit">
-              <div className="hero__benefit-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                </svg>
-              </div>
-              <span className="hero__benefit-text">Hyperledger Fabric</span>
-            </div>
-
-            <div className="hero__benefit">
-              <div className="hero__benefit-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
-              </div>
-              <span className="hero__benefit-text">AI Risk Scoring</span>
-            </div>
-
-            <div className="hero__benefit">
-              <div className="hero__benefit-icon">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <span className="hero__benefit-text">Zero-Knowledge Proof</span>
+                <Play className="w-3.5 h-3.5 fill-current opacity-70" />
+                <span>Watch Demo</span>
+              </button>
             </div>
           </div>
         </div>

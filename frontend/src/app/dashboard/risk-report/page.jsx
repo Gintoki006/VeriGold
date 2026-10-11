@@ -9,7 +9,7 @@
  *            recommendation banner, register pledge, tx hash display.
  */
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
 import { Badge, Button, Spinner, ErrorState, CopyButton } from '@/components/ui';
@@ -55,12 +55,53 @@ function RiskReportContent() {
   const [amountRange, setAmountRange] = useState('2');
   const [boundGoldFp, setBoundGoldFp] = useState(null);
   const [registeredPledgeId, setRegisteredPledgeId] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
-  async function fetchReport(force = false) {
+  function handlePhoto(e) {
+    const file = e.target.files?.[0] ?? null;
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setRegError('Please select a valid image file (JPEG, PNG, or WebP).');
+        e.target.value = '';
+        setPhotoFile(null);
+        setPhotoPreview(null);
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setRegError('Image file exceeds 10 MB limit. Please select a smaller photo.');
+        e.target.value = '';
+        setPhotoFile(null);
+        setPhotoPreview(null);
+        return;
+      }
+      setRegError(null);
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+    }
+  }
+
+  function handleClearPhoto() {
+    setPhotoFile(null);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(null);
+    const input = document.getElementById('pledge-photo-upload');
+    if (input) input.value = '';
+  }
+
+  const fetchedRef = useRef('');
+  const inFlightRef = useRef(false);
+
+  const fetchReport = useCallback(async (force = false) => {
     if (!borrowerHash) {
       setLoading(false);
       return;
     }
+    if (inFlightRef.current && !force) return;
+    inFlightRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -74,36 +115,17 @@ function RiskReportContent() {
       setError(e.message);
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
-  }
+  }, [borrowerHash, initialGoldFp]);
 
   useEffect(() => {
-    let isCurrent = true;
     if (!borrowerHash) return;
-
-    const payload = { borrower_hash: borrowerHash };
-    if (initialGoldFp) {
-      payload.gold_fingerprint = initialGoldFp;
-    }
-
-    api.post('/api/borrowers/search', payload)
-      .then((res) => {
-        if (isCurrent) {
-          setReport(res.data);
-          setLoading(false);
-        }
-      })
-      .catch((e) => {
-        if (isCurrent) {
-          setError(e.message);
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [borrowerHash, initialGoldFp]);
+    const key = `${borrowerHash}:${initialGoldFp}`;
+    if (fetchedRef.current === key) return;
+    fetchedRef.current = key;
+    fetchReport();
+  }, [borrowerHash, initialGoldFp, fetchReport]);
 
   // Auto-map INR to Amount Range (PRD §11.2)
   function handleInrChange(val) {
@@ -134,13 +156,25 @@ function RiskReportContent() {
         if (isNaN(purity) || purity <= 0 || purity > 100) {
           throw new Error('Purity percentage must be between 0.1% and 100%.');
         }
-        const fpRes = await api.post('/api/gold/fingerprint', {
+        const payloadData = {
           weight_grams: weight,
           purity_percent: purity,
           item_type: goldForm.item_type || 'Bangle',
           item_count: 1,
           characteristics: goldForm.characteristics?.trim() || null,
-        });
+        };
+
+        let fpRes;
+        if (photoFile) {
+          const fd = new FormData();
+          fd.append('data', JSON.stringify(payloadData));
+          fd.append('photo', photoFile);
+          fpRes = await api.post('/api/gold/fingerprint', fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+        } else {
+          fpRes = await api.post('/api/gold/fingerprint', payloadData);
+        }
         finalGoldFp = fpRes.data.fingerprint_hash || fpRes.data.fingerprint;
       }
 
@@ -451,6 +485,52 @@ function RiskReportContent() {
                         onChange={(e) => setGoldForm(f => ({ ...f, characteristics: e.target.value }))}
                       />
                     </div>
+
+                    {/* Collateral Photo Attachment */}
+                    <div className="dash-form-group" style={{ gridColumn: '1 / -1', marginTop: '0.25rem' }}>
+                      <label htmlFor="pledge-photo-upload" className="dash-label">
+                        Attach Collateral Photo (Optional)
+                        <span style={{ marginLeft: '0.5rem', fontWeight: 400, color: 'var(--dash-text-faint)', fontSize: '0.75rem' }}>
+                          (JPEG, PNG, WebP up to 10 MB &bull; Binds visual pHash to lock against cross-lender duplicate pledges)
+                        </span>
+                      </label>
+                      <input
+                        type="file"
+                        id="pledge-photo-upload"
+                        name="pledge_photo"
+                        accept="image/jpeg,image/png,image/webp,image/*"
+                        onChange={handlePhoto}
+                        className="dash-input"
+                        style={{ cursor: 'pointer' }}
+                      />
+                      {photoPreview && (
+                        <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', borderRadius: '0.75rem' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photoPreview}
+                            alt={`Attached collateral preview: ${photoFile?.name ?? 'uploaded image'}`}
+                            style={{ width: '4rem', height: '4rem', objectFit: 'cover', borderRadius: '0.5rem', border: '1px solid var(--dash-border)' }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--dash-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {photoFile?.name}
+                            </p>
+                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--dash-text-muted)' }}>
+                              {photoFile ? `${(photoFile.size / 1024).toFixed(1)} KB` : ''} &bull; Ready for perceptual pHash binding
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleClearPhoto}
+                            className="dash-btn dash-btn--xs dash-btn--ghost"
+                            aria-label="Remove attached collateral photo"
+                            style={{ color: 'var(--dash-danger, #C62828)' }}
+                          >
+                            <span aria-hidden="true">&#x2715; </span>Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -529,10 +609,34 @@ function RiskReportContent() {
                     This loan and its gold collateral are now immutably registered across all consortium lenders, preventing duplicate pledging.
                   </p>
 
+                  {photoPreview && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.7)', borderRadius: '0.5rem', border: '1px solid rgba(46,139,87,0.3)' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photoPreview}
+                        alt="Locked collateral"
+                        style={{ width: '3rem', height: '3rem', objectFit: 'cover', borderRadius: '0.375rem', border: '1px solid rgba(46,139,87,0.2)' }}
+                      />
+                      <div>
+                        <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--dash-success-text)' }}>
+                          Collateral Image Anchored
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--dash-text-muted)' }}>
+                          Visual perceptual pHash bound to pledge on Hyperledger Fabric ledger
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                     <div>
                       <span className="dash-label" style={{ fontSize: '0.7rem' }}>PLEDGE ID</span>
-                      <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'monospace' }}>{registeredPledgeId}</strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <strong style={{ display: 'block', fontSize: '1rem', fontFamily: 'monospace' }}>{registeredPledgeId}</strong>
+                        {registeredPledgeId && (
+                          <CopyButton text={registeredPledgeId} ariaLabel="Copy pledge ID" />
+                        )}
+                      </div>
                     </div>
                     <div>
                       <span className="dash-label" style={{ fontSize: '0.7rem' }}>EXPOSURE BUCKET</span>

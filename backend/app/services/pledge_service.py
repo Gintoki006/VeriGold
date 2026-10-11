@@ -20,6 +20,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.lender import Lender
 from app.models.pledge_mirror import PledgeMirror, PledgeStatus
 from app.models.transaction import Transaction, TransactionStatus, TransactionType
 from app.services.fabric_gateway import FabricGatewayClient

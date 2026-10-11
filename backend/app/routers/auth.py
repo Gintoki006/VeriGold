@@ -14,15 +14,18 @@ Security decisions:
     so stale/deactivated lenders see 403 immediately.
 """
 from fastapi import APIRouter, Depends, Response
+from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config.settings import get_settings
 from app.db.database import get_db
 from app.middleware.auth import get_current_lender
 from app.models.lender import Lender
 from app.services import auth_service
 from app.validators.auth_schemas import ChallengeRequest, VerifyRequest
 
+settings = get_settings()
 router = APIRouter()
 
 
@@ -56,11 +59,14 @@ async def verify(body: VerifyRequest, db: AsyncSession = Depends(get_db)):
         db=db,
         msp_id=body.msp_id,
     )
-    stmt = select(Lender).where(Lender.login_identity_ref == body.identity_ref)
+    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+    lender_id = int(payload.get("sub", 1))
+
+    stmt = select(Lender).where(Lender.id == lender_id)
     result = await db.execute(stmt)
     lender = result.scalar_one_or_none()
     lender_data = {
-        "id": lender.id if lender else 1,
+        "id": lender.id if lender else lender_id,
         "msp_id": lender.fabric_msp_id if lender else (body.msp_id or "Org1MSP"),
         "fabric_msp_id": lender.fabric_msp_id if lender else (body.msp_id or "Org1MSP"),
         "organization_name": lender.organization_name if lender else "Demo Lender",

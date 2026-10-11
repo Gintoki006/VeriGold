@@ -12,7 +12,8 @@ Security invariants:
 """
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import select
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,6 +60,27 @@ async def log_action(
 
     try:
         if action_type == "BORROWER_SEARCH":
+            # Deduplication: prevent duplicate query logs if the exact same borrower_hash
+            # was searched by this lender within the last 5 seconds (e.g. rapid double-clicks, dev re-renders)
+            cutoff = datetime.now(timezone.utc) - timedelta(seconds=5)
+            dedup_stmt = (
+                select(Query.id)
+                .where(
+                    Query.lender_id == lender_id,
+                    Query.borrower_hash == (borrower_hash or ""),
+                    Query.created_at >= cutoff,
+                )
+                .limit(1)
+            )
+            existing = await db.scalar(dedup_stmt)
+            if existing:
+                logger.debug(
+                    "audit_logger: skipping duplicate BORROWER_SEARCH log for lender=%s hash=%s",
+                    lender_id,
+                    borrower_hash[:8] if borrower_hash else "",
+                )
+                return
+
             _risk_level = RiskLevel(risk_level) if risk_level else RiskLevel.LOW
             record = Query(
                 lender_id=lender_id,

@@ -1,60 +1,47 @@
-import Link from "next/link";
+"use client";
 
-export default function CtaSection() {
+import Link from "next/link";
+import { ArrowRight, Play } from "lucide-react";
+
+export default function CtaSection({ onOpenDemo }) {
   return (
-    <section className="cta section" id="cta">
-      <div className="container">
-        <div className="cta__inner reveal">
-          <h2 className="cta__title">
-            Zero Data Leakage.
-            <br />
-            Absolute Lending Certainty.
+    <section className="swiss-cta-section" id="cta">
+      <div className="swiss-container">
+        <div className="swiss-cta-box">
+          <div className="swiss-eyebrow justify-center mb-6">
+            <span className="swiss-eyebrow-dash" aria-hidden="true" />
+            <span className="swiss-eyebrow-text">Consortium Enrollment</span>
+            <span className="swiss-eyebrow-dash" aria-hidden="true" />
+          </div>
+
+          <h2 className="swiss-cta-title">
+            <span className="block">Verify before</span>
+            <span className="block swiss-title-muted">you sanction.</span>
           </h2>
 
-          <p className="cta__text">
-            Join a network of lenders with cross-institutional visibility,
-            built on cryptographic privacy and an immutable audit trail.
+          <p className="swiss-cta-subtitle">
+            Zero data leakage. Millisecond consensus. Stop operating in isolated silos and start
+            protecting your loan portfolio with India&apos;s privacy-first cross-lender gold loan registry.
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              gap: "1rem",
-              flexWrap: "wrap",
-              justifyContent: "center",
-            }}
-          >
-            <Link href="/auth" className="btn btn--primary">
-              Get Started
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M7 17L17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
+          <div className="swiss-cta-buttons">
+            <Link href="/auth" className="swiss-btn-primary" id="ctaPrimaryBtn">
+              <span>Start Verifying</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <a href="#how-it-works" className="btn btn--outline">
-              <span className="btn-text">Learn How It Works</span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M7 17L17 7" />
-                <path d="M7 7h10v10" />
-              </svg>
-            </a>
+            <button
+              type="button"
+              onClick={onOpenDemo || (() => {
+                const el = document.getElementById("how-it-works");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              })}
+              className="swiss-btn-secondary"
+              id="ctaSecondaryBtn"
+            >
+              <Play className="w-3.5 h-3.5 fill-current opacity-70" />
+              <span>Watch Demo</span>
+            </button>
           </div>
         </div>
       </div>

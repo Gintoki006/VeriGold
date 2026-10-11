@@ -37,10 +37,9 @@ engine = create_async_engine(
     pool_size=5,
     max_overflow=3,
     pool_recycle=180,
-    pool_timeout=10.0,
     connect_args={
-        "command_timeout": 10,
-        "timeout": 10,
+        "timeout": None,
+        "command_timeout": None,
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
     },

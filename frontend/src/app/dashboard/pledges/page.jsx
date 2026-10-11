@@ -128,9 +128,17 @@ export default function PledgesPage() {
                 {pledges.map((p) => (
                   <tr key={p.id}>
                     <td>
-                      <code className="dash-table__hash" title={p.id}>
-                        {truncateHash(p.id, 8, 4)}
-                      </code>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <code className="dash-table__hash" title={p.id}>
+                          {truncateHash(p.id, 8, 4)}
+                        </code>
+                        {p.id && (
+                          <CopyButton
+                            text={p.id}
+                            ariaLabel={`Copy pledge ID ${p.id}`}
+                          />
+                        )}
+                      </div>
                     </td>
                     <td>
                       <span className="dash-amount-pill">
